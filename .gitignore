@@ -1,0 +1,5 @@
+build/
+data/options.db
+data/charts/
+__pycache__/
+*.pyc

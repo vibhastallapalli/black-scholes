@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Black-Scholes Terminal</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0a0a;
+  --card: #111111;
+  --border: #1e1e1e;
+  --accent: #E24B4A;
+  --text: #ffffff;
+  --muted: #555555;
+  --green: #4CAF50;
+  --blue: #4285F4;
+  --orange: #FF9800;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  padding: 24px 28px;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.logo-main {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.logo-accent { color: var(--accent); }
+
+.logo-sub {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-left: 10px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--green);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--green); }
+  50%       { opacity: 0.3; box-shadow: none; }
+}
+
+.timestamp {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Live bar ── */
+.live-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.ticker-section {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-right: 24px;
+}
+
+.ticker-symbol {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.ticker-price {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+  color: var(--text);
+  transition: color 0.1s;
+}
+
+.ticker-arrow {
+  font-size: 13px;
+  font-weight: 700;
+  transition: color 0.3s;
+}
+
+.ticker-pct {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.ticker-arrow.up, .ticker-pct.up { color: var(--green); }
+.ticker-arrow.down, .ticker-pct.down { color: var(--accent); }
+
+.bar-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+  margin: 0 24px;
+  flex-shrink: 0;
+}
+
+.session-stats {
+  display: flex;
+  gap: 28px;
+  flex: 1;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+}
+
+.pause-btn {
+  padding: 7px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.pause-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pause-btn.resumed { border-color: var(--green); color: var(--green); }
+
+/* ── Price flash animations ── */
+@keyframes flashGreen {
+  0%   { color: #00e676; text-shadow: 0 0 12px rgba(0,230,118,0.8); }
+  100% { color: #ffffff; text-shadow: none; }
+}
+@keyframes flashRed {
+  0%   { color: #ff5252; text-shadow: 0 0 12px rgba(255,82,82,0.8); }
+  100% { color: #ffffff; text-shadow: none; }
+}
+
+.flash-up   { animation: flashGreen 0.6s ease-out forwards; }
+.flash-down { animation: flashRed   0.6s ease-out forwards; }
+
+/* ── Greek flash animations ── */
+@keyframes bgGreen {
+  0%   { background: rgba(76,175,80,0.18); }
+  100% { background: var(--card); }
+}
+@keyframes bgRed {
+  0%   { background: rgba(226,75,74,0.18); }
+  100% { background: var(--card); }
+}
+
+.greek-up   { animation: bgGreen 0.5s ease-out forwards; }
+.greek-down { animation: bgRed   0.5s ease-out forwards; }
+
+/* ── Stock pills ── */
+.stock-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pill {
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pill:hover { border-color: #3a3a3a; color: var(--text); }
+.pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Inputs ── */
+.inputs-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+}
+
+.inputs-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.inp-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.inp-group label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.inp-group input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 11px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.inp-group input:focus { outline: none; border-color: var(--accent); }
+
+.type-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.type-wrap label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.type-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.type-btn {
+  padding: 9px 18px;
+  background: var(--bg);
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.type-btn.active { background: var(--accent); color: #fff; }
+
+.calc-btn {
+  padding: 9px 20px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+.calc-btn:hover { background: var(--accent); color: #fff; }
+
+/* ── Metrics ── */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.metric-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card.hi { border-color: var(--accent); }
+
+.metric-card.hi::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+.metric-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.metric-value {
+  font-size: 34px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+  line-height: 1;
+  color: var(--text);
+}
+
+.metric-value.red { color: var(--accent); }
+
+.mn-badge {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.mn-itm { background: rgba(76,175,80,0.12); color: var(--green); border: 1px solid rgba(76,175,80,0.25); }
+.mn-atm { background: rgba(255,193,7,0.12); color: #FFC107; border: 1px solid rgba(255,193,7,0.25); }
+.mn-otm { background: rgba(226,75,74,0.12); color: var(--accent); border: 1px solid rgba(226,75,74,0.25); }
+
+/* ── Greeks ── */
+.section-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.greeks-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.greek-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  transition: background 0.1s;
+}
+
+.greek-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.greek-name {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.greek-sym {
+  font-size: 16px;
+  color: var(--accent);
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+.greek-value {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.1;
+}
+
+.greek-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── Charts ── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 22px;
+}
+
+.chart-title {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.chart-wrap { position: relative; height: 240px; }
+
+/* ── Table ── */
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 22px;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0 14px 10px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr { border-bottom: 1px solid #161616; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+tbody td {
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+  font-size: 13px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.tag-call { background: rgba(226,75,74,0.15); color: var(--accent); }
+.tag-put  { background: rgba(66,133,244,0.15); color: var(--blue); }
+.td-asset { font-weight: 700; }
+.td-call  { color: var(--accent); }
+.td-put   { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <span class="logo-main">Black<span class="logo-accent">-</span>Scholes</span>
+    <span class="logo-sub">Options Terminal</span>
+  </div>
+  <div class="header-right">
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      LIVE
+    </div>
+    <span class="timestamp" id="ts">--:--:-- EST</span>
+  </div>
+</div>
+
+<!-- Live bar -->
+<div class="live-bar">
+  <div class="ticker-section">
+    <span class="ticker-symbol" id="tickerSymbol">AAPL</span>
+    <span class="ticker-price" id="tickerPrice">$195.76</span>
+    <span class="ticker-arrow up" id="tickerArrow">▲</span>
+    <span class="ticker-pct up" id="tickerPct">+0.00%</span>
+  </div>
+  <div class="bar-divider"></div>
+  <div class="session-stats">
+    <div class="stat">
+      <span class="stat-label">Session High</span>
+      <span class="stat-value" id="statHigh">—</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Session Low</span>
+      <span class="stat-value" id="statLow">—</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Ticks</span>
+      <span class="stat-value" id="statTicks">0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Elapsed</span>
+      <span class="stat-value" id="statElapsed">00:00</span>
+    </div>
+  </div>
+  <button class="pause-btn" id="pauseBtn" onclick="togglePause()">⏸ PAUSE</button>
+</div>
+
+<!-- Stock selector -->
+<div class="stock-row">
+  <button class="pill active" data-price="195.76" onclick="selectStock(this)">AAPL</button>
+  <button class="pill" data-price="268.03" onclick="selectStock(this)">TSLA</button>
+  <button class="pill" data-price="523.50" onclick="selectStock(this)">NVDA</button>
+  <button class="pill" data-price="172.79" onclick="selectStock(this)">AMZN</button>
+  <button class="pill" data-price="520.00" onclick="selectStock(this)">SPY</button>
+</div>
+
+<!-- Inputs -->
+<div class="inputs-panel">
+  <div class="inputs-row">
+    <div class="inp-group">
+      <label>Spot Price (S)</label>
+      <input type="number" id="S" value="195.76" step="0.01" oninput="onManualEdit()">
+    </div>
+    <div class="inp-group">
+      <label>Strike Price (K)</label>
+      <input type="number" id="K" value="200.00" step="0.01" oninput="updateAll()">
+    </div>
+    <div class="inp-group">
+      <label>Expiry T (years)</label>
+      <input type="number" id="T" value="0.50" step="0.01" min="0.001" oninput="updateAll()">
+    </div>
+    <div class="inp-group">
+      <label>Risk-Free Rate (r)</label>
+      <input type="number" id="r" value="0.05" step="0.001" oninput="updateAll()">
+    </div>
+    <div class="inp-group">
+      <label>Volatility (σ)</label>
+      <input type="number" id="sigma" value="0.25" step="0.001" oninput="onManualEdit()">
+    </div>
+    <div class="type-wrap">
+      <label>Type</label>
+      <div class="type-toggle">
+        <button class="type-btn active" id="callBtn" onclick="setType('call')">CALL</button>
+        <button class="type-btn" id="putBtn" onclick="setType('put')">PUT</button>
+      </div>
+    </div>
+    <button class="calc-btn" onclick="updateAll()">Calculate</button>
+  </div>
+</div>
+
+<!-- Metrics -->
+<div class="metrics-row">
+  <div class="metric-card hi" id="callCard">
+    <div class="metric-label">Call Price</div>
+    <div class="metric-value red" id="callPrice">—</div>
+  </div>
+  <div class="metric-card" id="putCard">
+    <div class="metric-label">Put Price</div>
+    <div class="metric-value" id="putPrice">—</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Moneyness</div>
+    <div id="moneyness" style="margin-top:4px">—</div>
+  </div>
+</div>
+
+<!-- Greeks -->
+<div class="section-label">Greeks</div>
+<div class="greeks-grid">
+  <div class="greek-card" id="cardDelta">
+    <div class="greek-head">
+      <span class="greek-name">Delta</span>
+      <span class="greek-sym">Δ</span>
+    </div>
+    <div class="greek-value" id="gDelta">—</div>
+    <div class="greek-desc">Price change per $1 move in the underlying</div>
+  </div>
+  <div class="greek-card" id="cardGamma">
+    <div class="greek-head">
+      <span class="greek-name">Gamma</span>
+      <span class="greek-sym">Γ</span>
+    </div>
+    <div class="greek-value" id="gGamma">—</div>
+    <div class="greek-desc">Rate of delta change per $1 spot move</div>
+  </div>
+  <div class="greek-card" id="cardTheta">
+    <div class="greek-head">
+      <span class="greek-name">Theta</span>
+      <span class="greek-sym">Θ</span>
+    </div>
+    <div class="greek-value" id="gTheta">—</div>
+    <div class="greek-desc">Daily time decay — value lost per calendar day</div>
+  </div>
+  <div class="greek-card" id="cardVega">
+    <div class="greek-head">
+      <span class="greek-name">Vega</span>
+      <span class="greek-sym">ν</span>
+    </div>
+    <div class="greek-value" id="gVega">—</div>
+    <div class="greek-desc">Price change per 1% increase in implied vol</div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-row">
+  <div class="chart-card">
+    <div class="chart-title">Option Price vs Spot Price</div>
+    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Greeks vs Spot Price</div>
+    <div class="chart-wrap"><canvas id="greeksChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="table-card">
+  <div class="section-label" style="margin-bottom:14px">Sample Contracts</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Asset</th><th>Type</th><th>Spot</th><th>Strike</th>
+        <th>Expiry</th><th>Vol</th><th>Call Price</th><th>Put Price</th><th>Delta</th>
+      </tr>
+    </thead>
+    <tbody id="tBody"></tbody>
+  </table>
+</div>
+
+<script>
+// ── Math ─────────────────────────────────────────────────────────────────────
+
+function ncdf(x) {
+  const a1=0.254829592, a2=-0.284496736, a3=1.421413741,
+        a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  const s = x < 0 ? -1 : 1;
+  const ax = Math.abs(x) / Math.SQRT2;
+  const t = 1 / (1 + p * ax);
+  const y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-ax*ax);
+  return 0.5 * (1 + s * y);
+}
+
+function npdf(x) {
+  return Math.exp(-0.5*x*x) / Math.sqrt(2*Math.PI);
+}
+
+function bsCalc(S, K, T, r, sig) {
+  if (T <= 0) return { call: Math.max(S-K,0), put: Math.max(K-S,0), d1:0, d2:0 };
+  const sq = Math.sqrt(T);
+  const d1 = (Math.log(S/K) + (r + sig*sig/2)*T) / (sig*sq);
+  const d2 = d1 - sig*sq;
+  return {
+    call: S*ncdf(d1)  - K*Math.exp(-r*T)*ncdf(d2),
+    put:  K*Math.exp(-r*T)*ncdf(-d2) - S*ncdf(-d1),
+    d1, d2
+  };
+}
+
+function greeks(S, K, T, r, sig, type) {
+  if (T <= 0) return { delta: type==='call'?(S>K?1:0):(S<K?-1:0), gamma:0, theta:0, vega:0 };
+  const sq = Math.sqrt(T);
+  const { d1, d2 } = bsCalc(S, K, T, r, sig);
+  const pd1 = npdf(d1);
+  const KeRT = K * Math.exp(-r*T);
+  const delta = type === 'call' ? ncdf(d1) : ncdf(d1) - 1;
+  const gamma = pd1 / (S * sig * sq);
+  const theta = type === 'call'
+    ? (-S*pd1*sig/(2*sq) - r*KeRT*ncdf(d2))  / 365
+    : (-S*pd1*sig/(2*sq) + r*KeRT*ncdf(-d2)) / 365;
+  const vega = S * pd1 * sq / 100;
+  return { delta, gamma, theta, vega };
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+
+let optType = 'call';
+let chartP = null, chartG = null;
+let isPaused = false;
+let simTmr = null, volTmr = null;
+let sessionStart = Date.now();
+let sessionOpen = 195.76;
+let liveSpot = 195.76;
+let prevSpot = 195.76;
+let liveVol = 0.25;
+let sessionHigh = 195.76;
+let sessionLow = 195.76;
+let tickCount = 0;
+let currentSymbol = 'AAPL';
+let prevGk = {};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function getIn() {
+  return {
+    S:   +document.getElementById('S').value     || 100,
+    K:   +document.getElementById('K').value     || 100,
+    T:   +document.getElementById('T').value     || 0.5,
+    r:   +document.getElementById('r').value     || 0.05,
+    sig: +document.getElementById('sigma').value || 0.2,
+  };
+}
+
+function moneyness(S, K, type) {
+  if (Math.abs(S/K - 1) < 0.01) return 'atm';
+  return (type === 'call' ? S > K : S < K) ? 'itm' : 'otm';
+}
+
+function fmtElapsed(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  return h > 0
+    ? `${h}:${String(m%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
+    : `${String(m).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+
+// ── Simulation ────────────────────────────────────────────────────────────────
+
+function priceTick() {
+  if (isPaused) return;
+  prevSpot = liveSpot;
+  liveSpot *= 1 + (Math.random() - 0.5) * 0.01; // ±0.5%
+  sessionHigh = Math.max(sessionHigh, liveSpot);
+  sessionLow  = Math.min(sessionLow,  liveSpot);
+  tickCount++;
+  document.getElementById('S').value = liveSpot.toFixed(2);
+  updateTicker();
+  updateSessionStats();
+  updateAll();
+}
+
+function volTick() {
+  if (isPaused) return;
+  liveVol = Math.max(0.05, Math.min(1.5, liveVol * (1 + (Math.random() - 0.5) * 0.02)));
+  document.getElementById('sigma').value = liveVol.toFixed(3);
+  updateAll();
+}
+
+function startSim() {
+  clearInterval(simTmr);
+  clearInterval(volTmr);
+  simTmr = setInterval(priceTick, 2000);
+  volTmr = setInterval(volTick, 10000);
+}
+
+function togglePause() {
+  isPaused = !isPaused;
+  const btn = document.getElementById('pauseBtn');
+  if (isPaused) {
+    btn.textContent = '▶ RESUME';
+    btn.classList.add('resumed');
+  } else {
+    btn.textContent = '⏸ PAUSE';
+    btn.classList.remove('resumed');
+    liveSpot = +document.getElementById('S').value || liveSpot;
+    liveVol  = +document.getElementById('sigma').value || liveVol;
+  }
+}
+
+function onManualEdit() {
+  if (!isPaused) {
+    isPaused = true;
+    const btn = document.getElementById('pauseBtn');
+    btn.textContent = '▶ RESUME';
+    btn.classList.add('resumed');
+  }
+  updateAll();
+}
+
+// ── Ticker ────────────────────────────────────────────────────────────────────
+
+function updateTicker() {
+  const pct = (liveSpot - sessionOpen) / sessionOpen * 100;
+  const isUp = liveSpot >= prevSpot;
+
+  document.getElementById('tickerSymbol').textContent = currentSymbol;
+
+  const priceEl = document.getElementById('tickerPrice');
+  priceEl.textContent = '$' + liveSpot.toFixed(2);
+  priceEl.classList.remove('flash-up', 'flash-down');
+  void priceEl.offsetWidth;
+  priceEl.classList.add(isUp ? 'flash-up' : 'flash-down');
+
+  const arrEl = document.getElementById('tickerArrow');
+  arrEl.textContent = isUp ? '▲' : '▼';
+  arrEl.className = 'ticker-arrow ' + (isUp ? 'up' : 'down');
+
+  const pctEl = document.getElementById('tickerPct');
+  pctEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+  pctEl.className = 'ticker-pct ' + (pct >= 0 ? 'up' : 'down');
+}
+
+function updateSessionStats() {
+  document.getElementById('statHigh').textContent    = '$' + sessionHigh.toFixed(2);
+  document.getElementById('statLow').textContent     = '$' + sessionLow.toFixed(2);
+  document.getElementById('statTicks').textContent   = tickCount;
+  document.getElementById('statElapsed').textContent = fmtElapsed(Date.now() - sessionStart);
+}
+
+// ── Greek flash ───────────────────────────────────────────────────────────────
+
+function flashCard(cardId, isUp) {
+  const el = document.getElementById(cardId);
+  el.classList.remove('greek-up', 'greek-down');
+  void el.offsetWidth;
+  el.classList.add(isUp ? 'greek-up' : 'greek-down');
+}
+
+// ── Main update ───────────────────────────────────────────────────────────────
+
+function updateAll() {
+  const { S, K, T, r, sig } = getIn();
+  const { call, put } = bsCalc(S, K, T, r, sig);
+  const g = greeks(S, K, T, r, sig, optType);
+  const mn = moneyness(S, K, optType);
+
+  document.getElementById('callPrice').textContent = '$' + call.toFixed(2);
+  document.getElementById('putPrice').textContent  = '$' + put.toFixed(2);
+  document.getElementById('moneyness').innerHTML   =
+    `<span class="mn-badge mn-${mn}">${mn.toUpperCase()}</span>`;
+
+  document.getElementById('callCard').classList.toggle('hi', optType === 'call');
+  document.getElementById('putCard').classList.toggle('hi', optType === 'put');
+  document.getElementById('callPrice').classList.toggle('red', optType === 'call');
+  document.getElementById('putPrice').classList.toggle('red', optType === 'put');
+
+  const gFields = [
+    { key:'delta', vid:'gDelta', cid:'cardDelta', val:g.delta, fmt: v=>v.toFixed(4) },
+    { key:'gamma', vid:'gGamma', cid:'cardGamma', val:g.gamma, fmt: v=>v.toFixed(6) },
+    { key:'theta', vid:'gTheta', cid:'cardTheta', val:g.theta, fmt: v=>v.toFixed(4) },
+    { key:'vega',  vid:'gVega',  cid:'cardVega',  val:g.vega,  fmt: v=>v.toFixed(4) },
+  ];
+
+  for (const f of gFields) {
+    document.getElementById(f.vid).textContent = f.fmt(f.val);
+    if (prevGk[f.key] !== undefined) flashCard(f.cid, f.val > prevGk[f.key]);
+    prevGk[f.key] = f.val;
+  }
+
+  updateCharts(S, K, T, r, sig);
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+
+const AXIS_STYLE = {
+  grid: { color: '#181818' },
+  border: { display: false },
+  ticks: { color: '#444', font: { size: 10 }, maxTicksLimit: 8 }
+};
+
+const BASE_OPTIONS = (showLegend) => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: { duration: 300, easing: 'easeInOutCubic' },
+  plugins: {
+    legend: {
+      display: showLegend,
+      labels: { color: '#666', font: { size: 11 }, boxWidth: 12, padding: 12 }
+    }
+  },
+  scales: { x: AXIS_STYLE, y: AXIS_STYLE }
+});
+
+function updateCharts(S, K, T, r, sig) {
+  const n = 50;
+  const spots = Array.from({ length: n }, (_, i) => S * (0.7 + 0.6 * i / (n - 1)));
+  const labels = spots.map(s => s.toFixed(1));
+
+  const calls=[], puts=[], Δs=[], Γs=[], Θs=[], νs=[];
+  for (const s of spots) {
+    const p = bsCalc(s, K, T, r, sig);
+    calls.push(p.call);
+    puts.push(p.put);
+    const gk = greeks(s, K, T, r, sig, optType);
+    Δs.push(gk.delta); Γs.push(gk.gamma); Θs.push(gk.theta); νs.push(gk.vega);
+  }
+
+  if (!chartP) {
+    chartP = new Chart(document.getElementById('priceChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label:'Call', data:calls, borderColor:'#E24B4A', backgroundColor:'rgba(226,75,74,0.06)',
+            borderWidth:2, pointRadius:0, tension:0.3, fill:true },
+          { label:'Put',  data:puts,  borderColor:'#666666', backgroundColor:'transparent',
+            borderWidth:2, pointRadius:0, tension:0.3 }
+        ]
+      },
+      options: BASE_OPTIONS(true)
+    });
+  } else {
+    chartP.data.labels = labels;
+    chartP.data.datasets[0].data = calls;
+    chartP.data.datasets[1].data = puts;
+    chartP.update();
+  }
+
+  const mk = (label, data, color) => ({
+    label, data, borderColor: color, backgroundColor: 'transparent',
+    borderWidth: 2, pointRadius: 0, tension: 0.3
+  });
+
+  if (!chartG) {
+    chartG = new Chart(document.getElementById('greeksChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          mk('Delta', Δs, '#4285F4'),
+          mk('Gamma', Γs, '#FF9800'),
+          mk('Theta', Θs, '#E24B4A'),
+          mk('Vega',  νs, '#4CAF50'),
+        ]
+      },
+      options: BASE_OPTIONS(true)
+    });
+  } else {
+    chartG.data.labels = labels;
+    chartG.data.datasets[0].data = Δs;
+    chartG.data.datasets[1].data = Γs;
+    chartG.data.datasets[2].data = Θs;
+    chartG.data.datasets[3].data = νs;
+    chartG.update();
+  }
+}
+
+// ── Stock selector ────────────────────────────────────────────────────────────
+
+function selectStock(el) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  currentSymbol = el.textContent.trim();
+  const price = +el.dataset.price;
+  liveSpot = price; prevSpot = price;
+  sessionOpen = price; sessionHigh = price; sessionLow = price;
+  tickCount = 0; sessionStart = Date.now(); prevGk = {};
+  document.getElementById('S').value = price.toFixed(2);
+  updateTicker();
+  updateSessionStats();
+  updateAll();
+}
+
+// ── Type toggle ───────────────────────────────────────────────────────────────
+
+function setType(t) {
+  optType = t;
+  document.getElementById('callBtn').classList.toggle('active', t === 'call');
+  document.getElementById('putBtn').classList.toggle('active', t === 'put');
+  updateAll();
+}
+
+// ── Contracts table ───────────────────────────────────────────────────────────
+
+const CONTRACTS = [
+  { asset:'AAPL', type:'call', S:195.76, K:200,  T:0.50, r:0.05, sig:0.25 },
+  { asset:'TSLA', type:'put',  S:268.03, K:265,  T:0.25, r:0.05, sig:0.55 },
+  { asset:'NVDA', type:'call', S:523.50, K:540,  T:1.00, r:0.05, sig:0.45 },
+  { asset:'AMZN', type:'put',  S:172.79, K:175,  T:0.75, r:0.05, sig:0.30 },
+  { asset:'SPY',  type:'call', S:520.00, K:515,  T:0.33, r:0.05, sig:0.18 },
+];
+
+function buildTable() {
+  document.getElementById('tBody').innerHTML = CONTRACTS.map(c => {
+    const { call, put } = bsCalc(c.S, c.K, c.T, c.r, c.sig);
+    const g = greeks(c.S, c.K, c.T, c.r, c.sig, c.type);
+    return `<tr>
+      <td class="td-asset">${c.asset}</td>
+      <td><span class="tag tag-${c.type}">${c.type.toUpperCase()}</span></td>
+      <td>$${c.S.toFixed(2)}</td><td>$${c.K.toFixed(2)}</td>
+      <td>${c.T}y</td><td>${(c.sig*100).toFixed(0)}%</td>
+      <td class="td-call">$${call.toFixed(2)}</td>
+      <td class="td-put">$${put.toFixed(2)}</td>
+      <td>${g.delta.toFixed(4)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+
+function clockTick() {
+  document.getElementById('ts').textContent =
+    new Date().toLocaleTimeString('en-US', { hour12: false }) + ' EST';
+  if (!isPaused) updateSessionStats();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+buildTable();
+updateTicker();
+updateSessionStats();
+updateAll();
+clockTick();
+setInterval(clockTick, 1000);
+startSim();
+</script>
+</body>
+</html>
