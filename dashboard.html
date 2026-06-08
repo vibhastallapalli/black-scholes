@@ -686,6 +686,29 @@ tbody td {
 .td-call  { color: var(--accent); }
 .td-put   { color: var(--blue); }
 
+/* ── Footer ── */
+.dash-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: #2e2e2e;
+  letter-spacing: 0.06em;
+}
+
+:root.light .dash-footer { color: #aaaaaa; }
+
+.foot-sep { color: #252525; }
+:root.light .foot-sep { color: #cccccc; }
+
+.foot-version {
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
 /* ── Skeleton loading ── */
 @keyframes shimmer {
   0%   { background-position: -400px 0; }
@@ -1007,6 +1030,14 @@ tbody td {
     <tbody id="tBody"></tbody>
   </table>
 </div>
+
+<footer class="dash-footer">
+  <span id="footerDate"></span>
+  <span class="foot-sep">·</span>
+  <span>Uptime <span id="footerUptime">00:00</span></span>
+  <span class="foot-sep">·</span>
+  <span class="foot-version">v1.0</span>
+</footer>
 
 </main>
 
@@ -1398,10 +1429,27 @@ function buildTable() {
 
 // ── Clock ─────────────────────────────────────────────────────────────────────
 
+const pageLoadTime = Date.now();
+
 function clockTick() {
   document.getElementById('ts').textContent =
     new Date().toLocaleTimeString('en-US', { hour12: false }) + ' EST';
   if (!isPaused) updateSessionStats();
+  updateFooter();
+}
+
+function updateFooter() {
+  const now = new Date();
+  document.getElementById('footerDate').textContent =
+    now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const up = Math.floor((Date.now() - pageLoadTime) / 1000);
+  const h = Math.floor(up / 3600);
+  const m = Math.floor((up % 3600) / 60);
+  const s = up % 60;
+  document.getElementById('footerUptime').textContent =
+    h > 0
+      ? `${h}h ${String(m).padStart(2,'0')}m`
+      : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
