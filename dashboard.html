@@ -641,7 +641,25 @@ thead th {
   text-align: left;
   font-weight: 600;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 0.15s;
 }
+
+thead th:hover { color: var(--text); }
+thead th.sort-asc, thead th.sort-desc { color: var(--gold); }
+
+.sort-arrow {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 9px;
+  opacity: 0.5;
+  vertical-align: middle;
+}
+
+thead th.sort-asc .sort-arrow,
+thead th.sort-desc .sort-arrow { opacity: 1; }
 
 tbody tr { border-bottom: 1px solid #161616; }
 tbody tr:last-child { border-bottom: none; }
@@ -872,8 +890,15 @@ tbody td {
   <table>
     <thead>
       <tr>
-        <th>Asset</th><th>Type</th><th>Spot</th><th>Strike</th>
-        <th>Expiry</th><th>Vol</th><th>Call Price</th><th>Put Price</th><th>Delta</th>
+        <th data-col="asset" onclick="sortTable(0,'str')">Asset<span class="sort-arrow">⇅</span></th>
+        <th data-col="type"  onclick="sortTable(1,'str')">Type<span class="sort-arrow">⇅</span></th>
+        <th data-col="spot"  onclick="sortTable(2,'num')">Spot<span class="sort-arrow">⇅</span></th>
+        <th data-col="strike" onclick="sortTable(3,'num')">Strike<span class="sort-arrow">⇅</span></th>
+        <th data-col="expiry" onclick="sortTable(4,'num')">Expiry<span class="sort-arrow">⇅</span></th>
+        <th data-col="vol"   onclick="sortTable(5,'num')">Vol<span class="sort-arrow">⇅</span></th>
+        <th data-col="call"  onclick="sortTable(6,'num')">Call Price<span class="sort-arrow">⇅</span></th>
+        <th data-col="put"   onclick="sortTable(7,'num')">Put Price<span class="sort-arrow">⇅</span></th>
+        <th data-col="delta" onclick="sortTable(8,'num')">Delta<span class="sort-arrow">⇅</span></th>
       </tr>
     </thead>
     <tbody id="tBody"></tbody>
@@ -1271,6 +1296,41 @@ updateAll();
 clockTick();
 setInterval(clockTick, 1000);
 startSim();
+
+// ── Table sort ───────────────────────────────────────────────────────────────
+
+let sortCol = -1, sortAsc = true;
+
+function sortTable(colIdx, type) {
+  const tbody = document.getElementById('tBody');
+  const ths = document.querySelectorAll('thead th');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  if (sortCol === colIdx) {
+    sortAsc = !sortAsc;
+  } else {
+    sortCol = colIdx;
+    sortAsc = true;
+  }
+
+  ths.forEach((th, i) => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    th.querySelector('.sort-arrow').textContent = '⇅';
+    if (i === colIdx) {
+      th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
+      th.querySelector('.sort-arrow').textContent = sortAsc ? '↑' : '↓';
+    }
+  });
+
+  rows.sort((a, b) => {
+    const av = a.cells[colIdx].textContent.replace(/[$%y]/g, '').trim();
+    const bv = b.cells[colIdx].textContent.replace(/[$%y]/g, '').trim();
+    const cmp = type === 'num' ? parseFloat(av) - parseFloat(bv) : av.localeCompare(bv);
+    return sortAsc ? cmp : -cmp;
+  });
+
+  rows.forEach(r => tbody.appendChild(r));
+}
 
 // ── Theme toggle ─────────────────────────────────────────────────────────────
 
