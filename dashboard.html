@@ -18,6 +18,7 @@
   --green: #4CAF50;
   --blue: #4285F4;
   --orange: #FF9800;
+  --gold: #C9A027;
 }
 
 body {
@@ -25,8 +26,114 @@ body {
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 14px;
-  padding: 24px 28px;
   min-height: 100vh;
+  display: flex;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 210px;
+  min-height: 100vh;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0 0;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  padding: 0 20px 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.sidebar-brand-main {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sidebar-brand-accent { color: var(--accent); }
+
+.sidebar-brand-sub {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.nav-section-label {
+  font-size: 9px;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  padding: 16px 20px 6px;
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.nav-link:hover {
+  color: #bbb;
+  background: rgba(255,255,255,0.025);
+}
+
+.nav-link.active {
+  color: #fff;
+  border-left-color: var(--gold);
+  background: rgba(201,160,39,0.07);
+}
+
+.nav-icon {
+  font-size: 13px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.nav-link.active .nav-icon { opacity: 1; }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: #2a2a2a;
+  letter-spacing: 0.08em;
+}
+
+/* ── Main content ── */
+.main-content {
+  flex: 1;
+  padding: 24px 28px;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* ── Header ── */
@@ -538,6 +645,47 @@ tbody td {
 </head>
 <body>
 
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-main">Black<span class="sidebar-brand-accent">-</span>Scholes</div>
+    <div class="sidebar-brand-sub">Options Terminal</div>
+  </div>
+  <div class="nav-section-label">Main</div>
+  <ul class="nav-list">
+    <li>
+      <a href="/" class="nav-link" data-path="/">
+        <span class="nav-icon">◈</span>Dashboard
+      </a>
+    </li>
+    <li>
+      <a href="/analytics" class="nav-link" data-path="/analytics">
+        <span class="nav-icon">∿</span>Analytics
+      </a>
+    </li>
+    <li>
+      <a href="/markets" class="nav-link" data-path="/markets">
+        <span class="nav-icon">◱</span>Markets
+      </a>
+    </li>
+    <li>
+      <a href="/portfolio" class="nav-link" data-path="/portfolio">
+        <span class="nav-icon">◧</span>Portfolio
+      </a>
+    </li>
+  </ul>
+  <div class="nav-section-label">System</div>
+  <ul class="nav-list">
+    <li>
+      <a href="/settings" class="nav-link" data-path="/settings">
+        <span class="nav-icon">⊙</span>Settings
+      </a>
+    </li>
+  </ul>
+  <div class="sidebar-footer">v1.0.0</div>
+</nav>
+
+<main class="main-content">
+
 <!-- Header -->
 <div class="header">
   <div>
@@ -704,6 +852,8 @@ tbody td {
     <tbody id="tBody"></tbody>
   </table>
 </div>
+
+</main>
 
 <script>
 // ── Math ─────────────────────────────────────────────────────────────────────
@@ -1071,6 +1221,28 @@ updateAll();
 clockTick();
 setInterval(clockTick, 1000);
 startSim();
+
+// ── Sidebar active state ──────────────────────────────────────────────────────
+
+(function() {
+  var raw = window.location.pathname
+    .replace(/\/index\.html$/, '/')
+    .replace(/\/dashboard\.html$/, '/');
+  var path = raw || '/';
+  var links = document.querySelectorAll('.nav-link');
+  var matched = false;
+  links.forEach(function(link) {
+    var lp = link.getAttribute('data-path');
+    if (lp === path || (lp !== '/' && path.startsWith(lp))) {
+      link.classList.add('active');
+      matched = true;
+    }
+  });
+  if (!matched) {
+    var root = document.querySelector('.nav-link[data-path="/"]');
+    if (root) root.classList.add('active');
+  }
+})();
 </script>
 </body>
 </html>
