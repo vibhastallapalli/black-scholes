@@ -686,6 +686,29 @@ tbody td {
 .td-call  { color: var(--accent); }
 .td-put   { color: var(--blue); }
 
+/* ── Search bar ── */
+.table-search-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.table-search {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 12px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  width: 200px;
+  transition: border-color 0.15s;
+}
+
+.table-search:focus { outline: none; border-color: var(--gold); }
+.table-search::placeholder { color: var(--muted); }
+
 /* ── Toast ── */
 #toast-container {
   position: fixed;
@@ -930,7 +953,10 @@ tbody td {
 
 <!-- Table -->
 <div class="table-card">
-  <div class="section-label" style="margin-bottom:14px">Sample Contracts</div>
+  <div class="table-search-wrap">
+    <div class="section-label" style="margin-bottom:0">Sample Contracts</div>
+    <input class="table-search" id="tableSearch" type="text" placeholder="Search asset or type…" oninput="filterTable()">
+  </div>
   <table>
     <thead>
       <tr>
@@ -1342,6 +1368,17 @@ updateAll();
 clockTick();
 setInterval(clockTick, 1000);
 startSim();
+
+// ── Table search ─────────────────────────────────────────────────────────────
+
+function filterTable() {
+  const q = document.getElementById('tableSearch').value.toLowerCase();
+  document.querySelectorAll('#tBody tr').forEach(row => {
+    const asset = row.cells[0].textContent.toLowerCase();
+    const type  = row.cells[1].textContent.toLowerCase();
+    row.style.display = (!q || asset.includes(q) || type.includes(q)) ? '' : 'none';
+  });
+}
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 
