@@ -686,6 +686,39 @@ tbody td {
 .td-call  { color: var(--accent); }
 .td-put   { color: var(--blue); }
 
+/* ── Skeleton loading ── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.skeleton-block {
+  background: linear-gradient(90deg, #1a1a1a 25%, #252525 50%, #1a1a1a 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 4px;
+  color: transparent !important;
+  user-select: none;
+  pointer-events: none;
+}
+
+.metric-value.skeleton-block { min-width: 80px; min-height: 34px; display: inline-block; }
+.greek-value.skeleton-block   { min-width: 70px; min-height: 24px; display: inline-block; }
+
+#tBody tr.skeleton-row td {
+  color: transparent;
+}
+
+#tBody tr.skeleton-row td::after {
+  content: '';
+  display: block;
+  height: 12px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #1a1a1a 25%, #252525 50%, #1a1a1a 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
 /* ── Search bar ── */
 .table-search-wrap {
   display: flex;
@@ -890,11 +923,11 @@ tbody td {
 <div class="metrics-row">
   <div class="metric-card hi" id="callCard">
     <div class="metric-label">Call Price</div>
-    <div class="metric-value red" id="callPrice">—</div>
+    <div class="metric-value red skeleton-block" id="callPrice">—</div>
   </div>
   <div class="metric-card" id="putCard">
     <div class="metric-label">Put Price</div>
-    <div class="metric-value" id="putPrice">—</div>
+    <div class="metric-value skeleton-block" id="putPrice">—</div>
   </div>
   <div class="metric-card">
     <div class="metric-label">Moneyness</div>
@@ -910,7 +943,7 @@ tbody td {
       <span class="greek-name">Delta</span>
       <span class="greek-sym">Δ</span>
     </div>
-    <div class="greek-value" id="gDelta">—</div>
+    <div class="greek-value skeleton-block" id="gDelta">—</div>
     <div class="greek-desc">Price change per $1 move in the underlying</div>
   </div>
   <div class="greek-card" id="cardGamma">
@@ -918,7 +951,7 @@ tbody td {
       <span class="greek-name">Gamma</span>
       <span class="greek-sym">Γ</span>
     </div>
-    <div class="greek-value" id="gGamma">—</div>
+    <div class="greek-value skeleton-block" id="gGamma">—</div>
     <div class="greek-desc">Rate of delta change per $1 spot move</div>
   </div>
   <div class="greek-card" id="cardTheta">
@@ -926,7 +959,7 @@ tbody td {
       <span class="greek-name">Theta</span>
       <span class="greek-sym">Θ</span>
     </div>
-    <div class="greek-value" id="gTheta">—</div>
+    <div class="greek-value skeleton-block" id="gTheta">—</div>
     <div class="greek-desc">Daily time decay — value lost per calendar day</div>
   </div>
   <div class="greek-card" id="cardVega">
@@ -934,7 +967,7 @@ tbody td {
       <span class="greek-name">Vega</span>
       <span class="greek-sym">ν</span>
     </div>
-    <div class="greek-value" id="gVega">—</div>
+    <div class="greek-value skeleton-block" id="gVega">—</div>
     <div class="greek-desc">Price change per 1% increase in implied vol</div>
   </div>
 </div>
@@ -1176,7 +1209,12 @@ function updateAll() {
   const mn = moneyness(S, K, optType);
 
   const first = isFirstUpdate;
-  if (first) isFirstUpdate = false;
+  if (first) {
+    isFirstUpdate = false;
+    ['callPrice','putPrice','gDelta','gGamma','gTheta','gVega'].forEach(id =>
+      document.getElementById(id).classList.remove('skeleton-block'));
+    document.querySelectorAll('#tBody tr.skeleton-row').forEach(r => r.remove());
+  }
 
   if (first) {
     countUp(document.getElementById('callPrice'), call, v => '$' + v.toFixed(2), 800);
@@ -1335,6 +1373,13 @@ const CONTRACTS = [
   { asset:'SPY',  type:'call', S:520.00, K:515,  T:0.33, r:0.05, sig:0.18 },
 ];
 
+function buildSkeletonRows() {
+  const cols = 9;
+  document.getElementById('tBody').innerHTML = Array.from({ length: 5 }, () =>
+    `<tr class="skeleton-row">${Array.from({ length: cols }, () => '<td>&nbsp;</td>').join('')}</tr>`
+  ).join('');
+}
+
 function buildTable() {
   document.getElementById('tBody').innerHTML = CONTRACTS.map(c => {
     const { call, put } = bsCalc(c.S, c.K, c.T, c.r, c.sig);
@@ -1361,13 +1406,17 @@ function clockTick() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-buildTable();
+buildSkeletonRows();
 updateTicker();
 updateSessionStats();
-updateAll();
 clockTick();
 setInterval(clockTick, 1000);
-startSim();
+
+setTimeout(() => {
+  buildTable();
+  updateAll();
+  startSim();
+}, 600);
 
 // ── Table search ─────────────────────────────────────────────────────────────
 
