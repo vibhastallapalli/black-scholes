@@ -915,8 +915,19 @@ let sessionLow = 195.76;
 let tickCount = 0;
 let currentSymbol = 'AAPL';
 let prevGk = {};
+let isFirstUpdate = true;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function countUp(el, target, fmt, duration) {
+  const t0 = performance.now();
+  (function tick(now) {
+    const p = Math.min((now - t0) / duration, 1);
+    const v = target * (1 - Math.pow(1 - p, 3));
+    el.textContent = fmt(v);
+    if (p < 1) requestAnimationFrame(tick);
+  })(performance.now());
+}
 
 function getIn() {
   return {
@@ -1042,9 +1053,17 @@ function updateAll() {
   const g = greeks(S, K, T, r, sig, optType);
   const mn = moneyness(S, K, optType);
 
-  document.getElementById('callPrice').textContent = '$' + call.toFixed(2);
-  document.getElementById('putPrice').textContent  = '$' + put.toFixed(2);
-  document.getElementById('moneyness').innerHTML   =
+  const first = isFirstUpdate;
+  if (first) isFirstUpdate = false;
+
+  if (first) {
+    countUp(document.getElementById('callPrice'), call, v => '$' + v.toFixed(2), 800);
+    countUp(document.getElementById('putPrice'),  put,  v => '$' + v.toFixed(2), 800);
+  } else {
+    document.getElementById('callPrice').textContent = '$' + call.toFixed(2);
+    document.getElementById('putPrice').textContent  = '$' + put.toFixed(2);
+  }
+  document.getElementById('moneyness').innerHTML =
     `<span class="mn-badge mn-${mn}">${mn.toUpperCase()}</span>`;
 
   document.getElementById('callCard').classList.toggle('hi', optType === 'call');
@@ -1060,8 +1079,12 @@ function updateAll() {
   ];
 
   for (const f of gFields) {
-    document.getElementById(f.vid).textContent = f.fmt(f.val);
-    if (prevGk[f.key] !== undefined) flashCard(f.cid, f.val > prevGk[f.key]);
+    if (first) {
+      countUp(document.getElementById(f.vid), f.val, f.fmt, 800);
+    } else {
+      document.getElementById(f.vid).textContent = f.fmt(f.val);
+      if (prevGk[f.key] !== undefined) flashCard(f.cid, f.val > prevGk[f.key]);
+    }
     prevGk[f.key] = f.val;
   }
 
