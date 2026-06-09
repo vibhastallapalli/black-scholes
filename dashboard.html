@@ -483,12 +483,28 @@ body {
 }
 
 .metric-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  background: rgba(17,17,17,0.55);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
   padding: 18px 22px;
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: box-shadow 0.2s;
+}
+
+.metric-card:hover {
+  box-shadow: 0 6px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+:root.light .metric-card {
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
 .metric-card.hi { border-color: var(--accent); }
@@ -552,11 +568,22 @@ body {
 }
 
 .greek-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  background: rgba(17,17,17,0.55);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
   padding: 16px 18px;
-  transition: background 0.1s;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: background 0.1s, box-shadow 0.2s;
+}
+
+:root.light .greek-card {
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7);
 }
 
 .greek-head {
