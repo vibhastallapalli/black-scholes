@@ -709,6 +709,165 @@ tbody td {
   letter-spacing: 0.1em;
 }
 
+/* ── Filter drawer ── */
+.filter-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 199;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.filter-overlay.show { opacity: 1; pointer-events: auto; }
+
+.filter-drawer {
+  position: fixed;
+  top: 0;
+  left: 210px;
+  bottom: 0;
+  width: 256px;
+  background: #0e0e0e;
+  border-right: 1px solid var(--border);
+  z-index: 200;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+:root.light .filter-drawer { background: #f8f8f9; }
+
+.filter-drawer.open { transform: translateX(0); }
+
+.filter-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-drawer-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.filter-close-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.filter-close-btn:hover { color: var(--text); }
+
+.filter-section-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.filter-check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-check-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.filter-check-item input[type=checkbox] {
+  accent-color: var(--gold);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.filter-range-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--muted);
+}
+
+.filter-range-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  outline: none;
+  cursor: pointer;
+}
+
+.filter-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+}
+
+.filter-reset-btn {
+  margin-top: auto;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+.filter-reset-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+.filter-toggle-btn {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.filter-toggle-btn:hover,
+.filter-toggle-btn.active { border-color: var(--gold); color: var(--gold); }
+
 /* ── Skeleton loading ── */
 @keyframes shimmer {
   0%   { background-position: -400px 0; }
@@ -1011,7 +1170,10 @@ tbody td {
 <div class="table-card">
   <div class="table-search-wrap">
     <div class="section-label" style="margin-bottom:0">Sample Contracts</div>
-    <input class="table-search" id="tableSearch" type="text" placeholder="Search asset or type…" oninput="filterTable()">
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input class="table-search" id="tableSearch" type="text" placeholder="Search asset or type…" oninput="filterTable()">
+      <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilterDrawer()">⚙ Filters</button>
+    </div>
   </div>
   <table>
     <thead>
@@ -1040,6 +1202,44 @@ tbody td {
 </footer>
 
 </main>
+
+<div class="filter-overlay" id="filterOverlay" onclick="toggleFilterDrawer()"></div>
+
+<div class="filter-drawer" id="filterDrawer">
+  <div class="filter-drawer-header">
+    <span class="filter-drawer-title">Filters</span>
+    <button class="filter-close-btn" onclick="toggleFilterDrawer()">✕</button>
+  </div>
+
+  <div>
+    <div class="filter-section-title">Asset</div>
+    <div class="filter-check-list" id="assetFilters">
+      <label class="filter-check-item"><input type="checkbox" value="AAPL" checked onchange="applyFilters()">AAPL</label>
+      <label class="filter-check-item"><input type="checkbox" value="TSLA" checked onchange="applyFilters()">TSLA</label>
+      <label class="filter-check-item"><input type="checkbox" value="NVDA" checked onchange="applyFilters()">NVDA</label>
+      <label class="filter-check-item"><input type="checkbox" value="AMZN" checked onchange="applyFilters()">AMZN</label>
+      <label class="filter-check-item"><input type="checkbox" value="SPY"  checked onchange="applyFilters()">SPY</label>
+    </div>
+  </div>
+
+  <div>
+    <div class="filter-section-title">Option Type</div>
+    <div class="filter-check-list">
+      <label class="filter-check-item"><input type="checkbox" id="fCall" checked onchange="applyFilters()">Call</label>
+      <label class="filter-check-item"><input type="checkbox" id="fPut"  checked onchange="applyFilters()">Put</label>
+    </div>
+  </div>
+
+  <div>
+    <div class="filter-section-title">Max Volatility</div>
+    <div class="filter-range-wrap">
+      <input class="filter-range-slider" type="range" id="fVol" min="10" max="60" value="60" step="5" oninput="onVolSlider()">
+      <div class="filter-range-labels"><span>10%</span><span id="fVolLabel">≤ 60%</span><span>60%</span></div>
+    </div>
+  </div>
+
+  <button class="filter-reset-btn" onclick="resetFilters()">↺ Reset Filters</button>
+</div>
 
 <script>
 // ── Math ─────────────────────────────────────────────────────────────────────
@@ -1466,15 +1666,52 @@ setTimeout(() => {
   startSim();
 }, 600);
 
-// ── Table search ─────────────────────────────────────────────────────────────
+// ── Table search + filter drawer ─────────────────────────────────────────────
 
-function filterTable() {
-  const q = document.getElementById('tableSearch').value.toLowerCase();
+function filterTable() { applyFilters(); }
+
+function applyFilters() {
+  const q       = (document.getElementById('tableSearch').value || '').toLowerCase();
+  const assets  = Array.from(document.querySelectorAll('#assetFilters input:checked')).map(i => i.value);
+  const wantCall = document.getElementById('fCall').checked;
+  const wantPut  = document.getElementById('fPut').checked;
+  const maxVol   = parseInt(document.getElementById('fVol').value, 10);
+
   document.querySelectorAll('#tBody tr').forEach(row => {
-    const asset = row.cells[0].textContent.toLowerCase();
-    const type  = row.cells[1].textContent.toLowerCase();
-    row.style.display = (!q || asset.includes(q) || type.includes(q)) ? '' : 'none';
+    if (row.classList.contains('skeleton-row')) return;
+    const asset = row.cells[0].textContent.trim();
+    const type  = row.cells[1].textContent.toLowerCase().trim();
+    const vol   = parseFloat(row.cells[5].textContent) || 0;
+    const searchOk  = !q || asset.toLowerCase().includes(q) || type.includes(q);
+    const assetOk   = assets.includes(asset);
+    const typeOk    = (type.includes('call') && wantCall) || (type.includes('put') && wantPut);
+    const volOk     = vol <= maxVol;
+    row.style.display = (searchOk && assetOk && typeOk && volOk) ? '' : 'none';
   });
+}
+
+function onVolSlider() {
+  document.getElementById('fVolLabel').textContent = '≤ ' + document.getElementById('fVol').value + '%';
+  applyFilters();
+}
+
+function toggleFilterDrawer() {
+  const drawer  = document.getElementById('filterDrawer');
+  const overlay = document.getElementById('filterOverlay');
+  const btn     = document.getElementById('filterToggleBtn');
+  const open = drawer.classList.toggle('open');
+  overlay.classList.toggle('show', open);
+  btn.classList.toggle('active', open);
+}
+
+function resetFilters() {
+  document.querySelectorAll('#assetFilters input').forEach(i => i.checked = true);
+  document.getElementById('fCall').checked = true;
+  document.getElementById('fPut').checked  = true;
+  document.getElementById('fVol').value    = 60;
+  document.getElementById('fVolLabel').textContent = '≤ 60%';
+  document.getElementById('tableSearch').value = '';
+  applyFilters();
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
