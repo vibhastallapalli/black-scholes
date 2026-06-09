@@ -146,14 +146,48 @@ body {
 
 .nav-link.active .nav-icon { opacity: 1; }
 
-.sidebar-footer {
-  margin-top: auto;
-  padding: 16px 20px;
+.sparkline-widget {
+  padding: 12px 16px 10px;
   border-top: 1px solid var(--border);
+}
+
+.sparkline-label {
+  font-size: 9px;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+:root.light .sparkline-label { color: #aaa; }
+
+.sparkline-svg {
+  width: 100%;
+  height: 40px;
+  display: block;
+  overflow: visible;
+}
+
+.sparkline-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #333;
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 4px;
+}
+
+:root.light .sparkline-meta { color: #aaa; }
+
+.sidebar-footer {
+  padding: 10px 20px 16px;
   font-size: 10px;
   color: #2a2a2a;
   letter-spacing: 0.08em;
 }
+
+:root.light .sidebar-footer { color: #ccc; }
 
 /* ── Main content ── */
 .main-content {
@@ -1139,6 +1173,15 @@ tbody td {
       </a>
     </li>
   </ul>
+  <div class="sparkline-widget">
+    <div class="sparkline-label">7-Day Activity</div>
+    <svg id="sideSparkline" class="sparkline-svg" viewBox="0 0 160 40" preserveAspectRatio="none"></svg>
+    <div class="sparkline-meta">
+      <span id="sparkLow">—</span>
+      <span id="sparkSymbol">AAPL</span>
+      <span id="sparkHigh">—</span>
+    </div>
+  </div>
   <div class="sidebar-footer">v1.0.0</div>
 </nav>
 
@@ -1502,6 +1545,7 @@ function priceTick() {
   updateTicker();
   updateSessionStats();
   updateAll();
+  pushSparkPoint(liveSpot);
 }
 
 function volTick() {
@@ -1806,6 +1850,7 @@ function updateFooter() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 buildSkeletonRows();
+pushSparkPoint(liveSpot);
 updateTicker();
 updateSessionStats();
 clockTick();
@@ -1948,6 +1993,53 @@ function toggleTheme() {
     document.getElementById('themeBtn').textContent = '● Dark';
   }
 })();
+
+// ── Sidebar sparkline ─────────────────────────────────────────────────────────
+
+const sparkHistory = [];
+const SPARK_MAX = 30;
+
+function pushSparkPoint(price) {
+  sparkHistory.push(price);
+  if (sparkHistory.length > SPARK_MAX) sparkHistory.shift();
+  renderSparkline();
+}
+
+function renderSparkline() {
+  const svg = document.getElementById('sideSparkline');
+  if (!svg || sparkHistory.length < 2) return;
+
+  const W = 160, H = 40, pad = 2;
+  const lo = Math.min(...sparkHistory);
+  const hi = Math.max(...sparkHistory);
+  const range = hi - lo || 1;
+
+  const pts = sparkHistory.map((v, i) => {
+    const x = pad + (i / (sparkHistory.length - 1)) * (W - pad * 2);
+    const y = pad + (1 - (v - lo) / range) * (H - pad * 2);
+    return [x, y];
+  });
+
+  const lineD  = pts.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' ');
+  const fillD  = lineD + ` L${pts[pts.length-1][0]},${H} L${pts[0][0]},${H} Z`;
+  const trend  = sparkHistory[sparkHistory.length - 1] >= sparkHistory[0];
+  const color  = trend ? '#4CAF50' : '#E24B4A';
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="${fillD}" fill="url(#sparkGrad)"/>
+    <path d="${lineD}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+  `;
+
+  document.getElementById('sparkLow').textContent  = '$' + lo.toFixed(0);
+  document.getElementById('sparkHigh').textContent = '$' + hi.toFixed(0);
+  document.getElementById('sparkSymbol').textContent = currentSymbol;
+}
 
 // ── Calculate button confirm animation ───────────────────────────────────────
 
