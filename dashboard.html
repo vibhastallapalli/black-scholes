@@ -939,6 +939,57 @@ tbody td {
   letter-spacing: 0.1em;
 }
 
+/* ── Column visibility dropdown ── */
+.col-vis-wrap {
+  position: relative;
+}
+
+.col-vis-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #0e0e0e;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  z-index: 300;
+  min-width: 160px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+}
+
+:root.light .col-vis-dropdown { background: #ffffff; box-shadow: 0 8px 28px rgba(0,0,0,0.12); }
+
+.col-vis-dropdown.open { display: flex; flex-direction: column; gap: 6px; }
+
+.col-vis-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
+.col-vis-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.col-vis-item input[type=checkbox] {
+  accent-color: var(--gold);
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+
 /* ── Filter drawer ── */
 .filter-overlay {
   position: fixed;
@@ -1430,6 +1481,21 @@ tbody td {
     <div style="display:flex;gap:8px;align-items:center;">
       <input class="table-search" id="tableSearch" type="text" placeholder="Search asset or type…" oninput="filterTable()">
       <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilterDrawer()">⚙ Filters</button>
+      <div class="col-vis-wrap" id="colVisWrap">
+        <button class="filter-toggle-btn" onclick="toggleColVis(event)" title="Column visibility">⊞ Columns</button>
+        <div class="col-vis-dropdown" id="colVisDropdown">
+          <div class="col-vis-title">Show / Hide Columns</div>
+          <label class="col-vis-item"><input type="checkbox" data-col="0" checked onchange="applyColVis()">Asset</label>
+          <label class="col-vis-item"><input type="checkbox" data-col="1" checked onchange="applyColVis()">Type</label>
+          <label class="col-vis-item"><input type="checkbox" data-col="2" checked onchange="applyColVis()">Spot</label>
+          <label class="col-vis-item"><input type="checkbox" data-col="3" checked onchange="applyColVis()">Strike</label>
+          <label class="col-vis-item"><input type="checkbox" data-col="4" checked onchange="applyColVis()">Expiry</label>
+          <label class="col-vis-item"><input type="checkbox" data-col="5" checked onchange="applyColVis()">Vol</label>
+          <label class="col-vis-item"><input type="checkbox" data-col="6" checked onchange="applyColVis()">Call Price</label>
+          <label class="col-vis-item"><input type="checkbox" data-col="7" checked onchange="applyColVis()">Put Price</label>
+          <label class="col-vis-item"><input type="checkbox" data-col="8" checked onchange="applyColVis()">Delta</label>
+        </div>
+      </div>
     </div>
   </div>
   <table>
@@ -1924,6 +1990,7 @@ setTimeout(() => {
   buildTable();
   updateAll();
   startSim();
+  applyColVis();
 }, 600);
 
 // ── Table search + filter drawer ─────────────────────────────────────────────
@@ -2170,6 +2237,48 @@ function calcWithConfirm() {
 
   tick();
   setInterval(tick, 2000);
+})();
+
+// ── Column visibility ─────────────────────────────────────────────────────────
+
+function toggleColVis(e) {
+  e.stopPropagation();
+  document.getElementById('colVisDropdown').classList.toggle('open');
+}
+
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('colVisWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('colVisDropdown').classList.remove('open');
+  }
+});
+
+function applyColVis() {
+  const checks = document.querySelectorAll('#colVisDropdown input[data-col]');
+  const state = {};
+  checks.forEach(cb => {
+    const ci = parseInt(cb.getAttribute('data-col'), 10);
+    state[ci] = cb.checked;
+    const ths = document.querySelectorAll('thead th');
+    if (ths[ci]) ths[ci].style.display = cb.checked ? '' : 'none';
+    document.querySelectorAll('#tBody tr').forEach(row => {
+      if (row.cells[ci]) row.cells[ci].style.display = cb.checked ? '' : 'none';
+    });
+  });
+  localStorage.setItem('colVis', JSON.stringify(state));
+}
+
+(function loadColVis() {
+  const saved = localStorage.getItem('colVis');
+  if (!saved) return;
+  try {
+    const state = JSON.parse(saved);
+    document.querySelectorAll('#colVisDropdown input[data-col]').forEach(cb => {
+      const ci = parseInt(cb.getAttribute('data-col'), 10);
+      if (state[ci] === false) cb.checked = false;
+    });
+    applyColVis();
+  } catch(e) {}
 })();
 
 // ── Floating action button ───────────────────────────────────────────────────
