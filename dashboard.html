@@ -688,9 +688,20 @@ thead th.sort-asc, thead th.sort-desc { color: var(--gold); }
 thead th.sort-asc .sort-arrow,
 thead th.sort-desc .sort-arrow { opacity: 1; }
 
-tbody tr { border-bottom: 1px solid #161616; }
+tbody tr { border-bottom: 1px solid #161616; border-left: 3px solid transparent; }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+tbody tr[data-type="call"] {
+  border-left-color: #E24B4A;
+  background: rgba(226,75,74,0.04);
+}
+tbody tr[data-type="put"] {
+  border-left-color: #4285F4;
+  background: rgba(66,133,244,0.04);
+}
+tbody tr[data-type="call"]:hover { background: rgba(226,75,74,0.08); }
+tbody tr[data-type="put"]:hover  { background: rgba(66,133,244,0.08); }
 
 tbody td {
   padding: 10px 14px;
@@ -1642,7 +1653,7 @@ function buildTable() {
   document.getElementById('tBody').innerHTML = CONTRACTS.map(c => {
     const { call, put } = bsCalc(c.S, c.K, c.T, c.r, c.sig);
     const g = greeks(c.S, c.K, c.T, c.r, c.sig, c.type);
-    return `<tr>
+    return `<tr data-type="${c.type}">
       <td class="td-asset">${c.asset}</td>
       <td><span class="tag tag-${c.type}">${c.type.toUpperCase()}</span></td>
       <td>$${c.S.toFixed(2)}</td><td>$${c.K.toFixed(2)}</td>
