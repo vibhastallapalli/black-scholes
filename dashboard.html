@@ -474,6 +474,86 @@ body {
 
 .calc-btn:hover { background: var(--accent); color: #fff; }
 
+/* ── Expiry countdown widget ── */
+.expiry-widget {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: rgba(17,17,17,0.55);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 14px 22px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+:root.light .expiry-widget {
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.expiry-left, .expiry-right {
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.expiry-right { text-align: right; }
+
+.expiry-label {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.expiry-val {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  line-height: 1;
+}
+
+.expiry-countdown {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--gold);
+}
+
+.expiry-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.expiry-bar-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.expiry-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--green), var(--gold), var(--accent));
+  transition: width 0.6s ease;
+}
+
+.expiry-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
 /* ── Metrics ── */
 .metrics-row {
   display: grid;
@@ -1139,6 +1219,24 @@ tbody td {
   </div>
 </div>
 
+<!-- Expiry countdown -->
+<div class="expiry-widget" id="expiryWidget">
+  <div class="expiry-left">
+    <div class="expiry-label">Contract Expiry</div>
+    <div class="expiry-val" id="expDays">—</div>
+  </div>
+  <div class="expiry-bar-wrap">
+    <div class="expiry-bar-track"><div class="expiry-bar-fill" id="expBar"></div></div>
+    <div class="expiry-bar-labels">
+      <span>Now</span><span id="expStatus">—</span><span id="expDate">—</span>
+    </div>
+  </div>
+  <div class="expiry-right">
+    <div class="expiry-label">Remaining</div>
+    <div class="expiry-countdown" id="expCountdown">—</div>
+  </div>
+</div>
+
 <!-- Metrics -->
 <div class="metrics-row">
   <div class="metric-card hi" id="callCard">
@@ -1518,6 +1616,7 @@ function updateAll() {
   }
 
   updateCharts(S, K, T, r, sig);
+  updateExpiry();
 }
 
 // ── Charts ────────────────────────────────────────────────────────────────────
@@ -1800,6 +1899,25 @@ function sortTable(colIdx, type) {
   });
 
   rows.forEach(r => tbody.appendChild(r));
+}
+
+// ── Expiry countdown ─────────────────────────────────────────────────────────
+
+function updateExpiry() {
+  const T      = +document.getElementById('T').value || 0.5;
+  const days   = Math.round(T * 365);
+  const exDate = new Date(Date.now() + T * 365 * 24 * 3600 * 1000);
+  const pct    = Math.min(100, Math.max(2, (1 - T / 2) * 100));
+
+  document.getElementById('expDays').textContent      = days + 'd';
+  document.getElementById('expBar').style.width       = pct + '%';
+  document.getElementById('expDate').textContent      =
+    exDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  const h  = Math.floor((T * 365 * 24) % 24);
+  const status = T < 0.083 ? 'Near expiry' : T < 0.5 ? 'Short-dated' : 'Long-dated';
+  document.getElementById('expStatus').textContent    = status;
+  document.getElementById('expCountdown').textContent = days + 'd ' + h + 'h left';
 }
 
 // ── Theme toggle ─────────────────────────────────────────────────────────────
