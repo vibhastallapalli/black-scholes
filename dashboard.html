@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Black-Scholes Terminal</title>
+<link id="favicon" rel="icon" type="image/png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1933,6 +1934,57 @@ function toggleTheme() {
     document.documentElement.classList.add('light');
     document.getElementById('themeBtn').textContent = '● Dark';
   }
+})();
+
+// ── Animated favicon ─────────────────────────────────────────────────────────
+
+(function() {
+  var canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 32;
+  var ctx = canvas.getContext('2d');
+  var state = 0;
+
+  function drawBriefcase() {
+    ctx.clearRect(0, 0, 32, 32);
+    ctx.fillStyle = '#E24B4A';
+    ctx.beginPath();
+    ctx.roundRect(4, 12, 24, 16, 3);
+    ctx.fill();
+    ctx.fillStyle = '#C9A027';
+    ctx.fillRect(11, 8, 10, 5);
+    ctx.clearRect(13, 6, 6, 4);
+    ctx.strokeStyle = '#C9A027';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(13, 6, 6, 4);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(14, 19, 4, 3);
+  }
+
+  function drawCheckmark() {
+    ctx.clearRect(0, 0, 32, 32);
+    ctx.fillStyle = '#4CAF50';
+    ctx.beginPath();
+    ctx.arc(16, 16, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(9, 16);
+    ctx.lineTo(14, 21);
+    ctx.lineTo(23, 11);
+    ctx.stroke();
+  }
+
+  function tick() {
+    if (state === 0) drawBriefcase(); else drawCheckmark();
+    state = 1 - state;
+    document.getElementById('favicon').href = canvas.toDataURL('image/png');
+  }
+
+  tick();
+  setInterval(tick, 2000);
 })();
 
 // ── Sidebar active state ──────────────────────────────────────────────────────
