@@ -475,6 +475,19 @@ body {
 
 .calc-btn:hover { background: var(--accent); color: #fff; }
 
+.calc-btn.confirmed {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+  animation: calcRipple 0.4s ease-out;
+}
+
+@keyframes calcRipple {
+  0%   { box-shadow: 0 0 0 0 rgba(76,175,80,0.55); transform: scale(0.96); }
+  50%  { box-shadow: 0 0 0 10px rgba(76,175,80,0); transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 12px rgba(76,175,80,0); transform: scale(1); }
+}
+
 /* ── Expiry countdown widget ── */
 .expiry-widget {
   display: flex;
@@ -1216,7 +1229,7 @@ tbody td {
         <button class="type-btn" id="putBtn" onclick="setType('put')">PUT</button>
       </div>
     </div>
-    <button class="calc-btn" onclick="updateAll()">Calculate</button>
+    <button class="calc-btn" id="calcBtn" onclick="calcWithConfirm()">Calculate</button>
   </div>
 </div>
 
@@ -1935,6 +1948,22 @@ function toggleTheme() {
     document.getElementById('themeBtn').textContent = '● Dark';
   }
 })();
+
+// ── Calculate button confirm animation ───────────────────────────────────────
+
+let calcConfirmTimer = null;
+
+function calcWithConfirm() {
+  updateAll();
+  const btn = document.getElementById('calcBtn');
+  btn.textContent = '✓ Done';
+  btn.classList.add('confirmed');
+  clearTimeout(calcConfirmTimer);
+  calcConfirmTimer = setTimeout(() => {
+    btn.classList.remove('confirmed');
+    btn.textContent = 'Calculate';
+  }, 2000);
+}
 
 // ── Animated favicon ─────────────────────────────────────────────────────────
 
