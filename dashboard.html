@@ -939,6 +939,22 @@ tbody td {
   letter-spacing: 0.1em;
 }
 
+/* ── Sort memory pill ── */
+.sort-memory-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: rgba(201,160,39,0.1);
+  border: 1px solid rgba(201,160,39,0.28);
+  border-radius: 999px;
+  font-size: 10px;
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
 /* ── Column visibility dropdown ── */
 .col-vis-wrap {
   position: relative;
@@ -1515,6 +1531,7 @@ tbody td {
 
 <!-- Table -->
 <div class="table-card">
+  <div id="sortMemoryPill" class="sort-memory-pill" style="display:none"></div>
   <div class="table-search-wrap">
     <div class="section-label" style="margin-bottom:0">Sample Contracts</div>
     <div style="display:flex;gap:8px;align-items:center;">
@@ -2034,6 +2051,14 @@ setTimeout(() => {
   updateAll();
   startSim();
   applyColVis();
+  (function restoreTableSort() {
+    const saved = localStorage.getItem('tableSort');
+    if (!saved) return;
+    try {
+      const { col, asc, type } = JSON.parse(saved);
+      sortTable(col, type, asc);
+    } catch(e) {}
+  })();
 }, 600);
 
 // ── Table search + filter drawer ─────────────────────────────────────────────
@@ -2102,13 +2127,17 @@ function showToast(title, body) {
 // ── Table sort ───────────────────────────────────────────────────────────────
 
 let sortCol = -1, sortAsc = true;
+const SORT_COL_NAMES = ['Asset','Type','Spot','Strike','Expiry','Vol','Call Price','Put Price','Delta'];
 
-function sortTable(colIdx, type) {
+function sortTable(colIdx, type, forceAsc) {
   const tbody = document.getElementById('tBody');
   const ths = document.querySelectorAll('thead th');
   const rows = Array.from(tbody.querySelectorAll('tr'));
 
-  if (sortCol === colIdx) {
+  if (forceAsc !== undefined) {
+    sortCol = colIdx;
+    sortAsc = forceAsc;
+  } else if (sortCol === colIdx) {
     sortAsc = !sortAsc;
   } else {
     sortCol = colIdx;
@@ -2132,6 +2161,21 @@ function sortTable(colIdx, type) {
   });
 
   rows.forEach(r => tbody.appendChild(r));
+
+  localStorage.setItem('tableSort', JSON.stringify({ col: colIdx, asc: sortAsc, type }));
+  updateSortPill();
+}
+
+function updateSortPill() {
+  const pill = document.getElementById('sortMemoryPill');
+  if (!pill) return;
+  const saved = localStorage.getItem('tableSort');
+  if (!saved) { pill.style.display = 'none'; return; }
+  try {
+    const { col, asc } = JSON.parse(saved);
+    pill.textContent = 'Sorted by ' + SORT_COL_NAMES[col] + ' ' + (asc ? '↑' : '↓');
+    pill.style.display = '';
+  } catch(e) { pill.style.display = 'none'; }
 }
 
 // ── Expiry countdown ─────────────────────────────────────────────────────────
