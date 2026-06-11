@@ -635,7 +635,9 @@ body::after {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, transform 0.15s;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 
 .metric-card:hover {
@@ -2394,6 +2396,29 @@ function fabAction() {
     }, 2000);
   }, 1600);
 }
+
+// ── Card tilt effect ─────────────────────────────────────────────────────────
+
+(function initCardTilt() {
+  var MAX_DEG = 8;
+  document.querySelectorAll('.metric-card').forEach(function(card) {
+    card.addEventListener('mousemove', function(e) {
+      var rect = card.getBoundingClientRect();
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+      var dx = (e.clientX - cx) / (rect.width / 2);
+      var dy = (e.clientY - cy) / (rect.height / 2);
+      var rotX = (-dy * MAX_DEG).toFixed(2);
+      var rotY = (dx * MAX_DEG).toFixed(2);
+      card.style.transition = 'box-shadow 0.2s, transform 0.08s';
+      card.style.transform = 'perspective(800px) rotateX(' + rotX + 'deg) rotateY(' + rotY + 'deg)';
+    });
+    card.addEventListener('mouseleave', function() {
+      card.style.transition = 'box-shadow 0.2s, transform 0.4s ease';
+      card.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg)';
+    });
+  });
+})();
 
 // ── Reading progress bar ─────────────────────────────────────────────────────
 
