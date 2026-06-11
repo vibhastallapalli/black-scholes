@@ -1182,6 +1182,31 @@ tbody td {
   animation: shimmer 1.4s ease-in-out infinite;
 }
 
+.chart-skel {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #1a1a1a 25%, #252525 50%, #1a1a1a 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  z-index: 1;
+  transition: opacity 0.5s ease;
+}
+.chart-skel.gone { opacity: 0; pointer-events: none; }
+
+:root.light .skeleton-block {
+  background: linear-gradient(90deg, #e2e2e2 25%, #eeeeee 50%, #e2e2e2 75%);
+  background-size: 800px 100%;
+}
+:root.light #tBody tr.skeleton-row td::after {
+  background: linear-gradient(90deg, #e2e2e2 25%, #eeeeee 50%, #e2e2e2 75%);
+  background-size: 800px 100%;
+}
+:root.light .chart-skel {
+  background: linear-gradient(90deg, #e2e2e2 25%, #eeeeee 50%, #e2e2e2 75%);
+  background-size: 800px 100%;
+}
+
 /* ── Search bar ── */
 .table-search-wrap {
   display: flex;
@@ -1466,11 +1491,11 @@ tbody td {
 <div class="charts-row">
   <div class="chart-card">
     <div class="chart-title">Option Price vs Spot Price</div>
-    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+    <div class="chart-wrap"><div class="chart-skel" id="skelPriceChart"></div><canvas id="priceChart"></canvas></div>
   </div>
   <div class="chart-card">
     <div class="chart-title">Greeks vs Spot Price</div>
-    <div class="chart-wrap"><canvas id="greeksChart"></canvas></div>
+    <div class="chart-wrap"><div class="chart-skel" id="skelGreeksChart"></div><canvas id="greeksChart"></canvas></div>
   </div>
 </div>
 
@@ -1856,6 +1881,8 @@ function updateCharts(S, K, T, r, sig) {
       },
       options: BASE_OPTIONS(true)
     });
+    const skelP = document.getElementById('skelPriceChart');
+    if (skelP) skelP.classList.add('gone');
   } else {
     chartP.data.labels = labels;
     chartP.data.datasets[0].data = calls;
@@ -1882,6 +1909,8 @@ function updateCharts(S, K, T, r, sig) {
       },
       options: BASE_OPTIONS(true)
     });
+    const skelG = document.getElementById('skelGreeksChart');
+    if (skelG) skelG.classList.add('gone');
   } else {
     chartG.data.labels = labels;
     chartG.data.datasets[0].data = Δs;
