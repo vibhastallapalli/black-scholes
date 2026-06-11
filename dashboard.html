@@ -1230,6 +1230,19 @@ tbody td {
 .table-search:focus { outline: none; border-color: var(--gold); }
 .table-search::placeholder { color: var(--muted); }
 
+/* ── Reading progress bar ── */
+#readingProgress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  z-index: 9991;
+  transition: width 0.06s linear;
+  pointer-events: none;
+}
+
 /* ── Toast ── */
 #toast-container {
   position: fixed;
@@ -1275,6 +1288,7 @@ tbody td {
 </head>
 <body>
 
+<div id="readingProgress"></div>
 <div id="toast-container"></div>
 
 <nav class="sidebar">
@@ -2336,6 +2350,19 @@ function fabAction() {
     }, 2000);
   }, 1600);
 }
+
+// ── Reading progress bar ─────────────────────────────────────────────────────
+
+(function() {
+  var bar = document.getElementById('readingProgress');
+  window.addEventListener('scroll', function() {
+    var scrolled = window.scrollY || document.documentElement.scrollTop;
+    var total = document.documentElement.scrollHeight - window.innerHeight;
+    var pct = total > 0 ? (scrolled / total) * 100 : 0;
+    bar.style.width = pct + '%';
+    bar.style.opacity = pct >= 99.5 ? '0' : '1';
+  }, { passive: true });
+})();
 
 // ── Sidebar active state ──────────────────────────────────────────────────────
 
