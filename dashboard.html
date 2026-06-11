@@ -227,6 +227,26 @@ body::after {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+}
+
+.logo-main::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(201,160,39,0.45), transparent);
+  animation: logoSweep 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes logoSweep {
+  0%   { left: -60%; }
+  100% { left: 160%; }
 }
 
 .logo-accent { color: var(--accent); }
