@@ -1279,6 +1279,13 @@ tbody td {
 .table-search:focus { outline: none; border-color: var(--gold); }
 .table-search::placeholder { color: var(--muted); }
 
+/* ── Stat value pop flash ── */
+@keyframes statPop {
+  0%   { color: var(--gold); }
+  100% { color: var(--text); }
+}
+.stat-pop { animation: statPop 0.45s ease-out forwards; }
+
 /* ── Reading progress bar ── */
 #readingProgress {
   position: fixed;
@@ -1753,16 +1760,28 @@ function fmtElapsed(ms) {
 
 // ── Simulation ────────────────────────────────────────────────────────────────
 
+function popStat(id) {
+  var el = document.getElementById(id);
+  el.classList.remove('stat-pop');
+  void el.offsetWidth;
+  el.classList.add('stat-pop');
+}
+
 function priceTick() {
   if (isPaused) return;
   prevSpot = liveSpot;
   liveSpot *= 1 + (Math.random() - 0.5) * 0.01; // ±0.5%
+  var newHigh = liveSpot > sessionHigh;
+  var newLow  = liveSpot < sessionLow;
   sessionHigh = Math.max(sessionHigh, liveSpot);
   sessionLow  = Math.min(sessionLow,  liveSpot);
   tickCount++;
   document.getElementById('S').value = liveSpot.toFixed(2);
   updateTicker();
   updateSessionStats();
+  if (newHigh) popStat('statHigh');
+  if (newLow)  popStat('statLow');
+  popStat('statTicks');
   updateAll();
   pushSparkPoint(liveSpot);
 }
