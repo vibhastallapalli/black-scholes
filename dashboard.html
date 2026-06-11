@@ -6,6 +6,7 @@
 <title>Black-Scholes Terminal</title>
 <link id="favicon" rel="icon" type="image/png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -2051,6 +2052,7 @@ setInterval(clockTick, 1000);
 setTimeout(() => {
   buildTable();
   updateAll();
+  maybeConfetti();
   startSim();
   applyColVis();
   (function restoreTableSort() {
@@ -2395,6 +2397,20 @@ function fabAction() {
       document.getElementById('fabIcon').outerHTML = '<span class="fab-icon" id="fabIcon">↻</span>';
     }, 2000);
   }, 1600);
+}
+
+// ── Confetti burst ───────────────────────────────────────────────────────────
+
+function maybeConfetti() {
+  if (sessionStorage.getItem('confetti_shown')) return;
+  var inp = getIn();
+  var g = greeks(inp.S, inp.K, inp.T, inp.r, inp.sig, optType);
+  if (g.delta > 0.5) {
+    sessionStorage.setItem('confetti_shown', '1');
+    setTimeout(function() {
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.55 }, colors: ['#E24B4A','#C9A027','#4CAF50','#4285F4'] });
+    }, 900);
+  }
 }
 
 // ── Card tilt effect ─────────────────────────────────────────────────────────
