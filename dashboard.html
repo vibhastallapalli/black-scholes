@@ -424,7 +424,12 @@ body::after {
 }
 
 .pill:hover { border-color: #3a3a3a; color: var(--text); }
-.pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pill.active { background: var(--accent); border-color: var(--accent); color: #fff; animation: pillGlow 2s ease-in-out infinite; }
+
+@keyframes pillGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(226,75,74,0); }
+  50%       { box-shadow: 0 0 10px 4px rgba(226,75,74,0.45); }
+}
 
 /* ── Inputs ── */
 .inputs-panel {
