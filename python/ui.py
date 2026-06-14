@@ -42,11 +42,16 @@ def ask(prompt: str, cast=str, validate=None):
         return val
 
 
-def get_inputs() -> dict:
+def choose_mode() -> str:
     print("\n╔══════════════════════════════════════════╗")
     print("║   Black-Scholes Single Contract Pricer   ║")
     print("╚══════════════════════════════════════════╝\n")
+    print("  1) Price option")
+    print("  2) Solve implied volatility\n")
+    return ask("Select mode (1/2): ", str, lambda v: v in ("1", "2"))
 
+
+def get_inputs() -> dict:
     return {
         "asset":      ask("Asset name (e.g. AAPL): "),
         "spot_price": ask("Spot price S ($):        ", float, lambda v: v > 0),
@@ -57,6 +62,53 @@ def get_inputs() -> dict:
         "option_type":     ask("Option type (call/put): ",
                                str, lambda v: v.lower() in ("call", "put")),
     }
+
+
+def get_inputs_iv() -> dict:
+    return {
+        "asset":        ask("Asset name (e.g. AAPL): "),
+        "spot_price":   ask("Spot price S ($):        ", float, lambda v: v > 0),
+        "strike_price": ask("Strike price K ($):      ", float, lambda v: v > 0),
+        "time_to_expiry": ask("Time to expiry T (yrs): ", float, lambda v: v > 0),
+        "risk_free_rate": ask("Risk-free rate r (0–1): ", float, lambda v: 0 <= v < 1),
+        "volatility":     ask("Market price ($):       ", float, lambda v: v > 0),
+        "option_type":    ask("Option type (call/put): ",
+                              str, lambda v: v.lower() in ("call", "put")),
+    }
+
+
+def display_iv_result(params: dict, result: dict) -> None:
+    iv_raw = result.get("implied_vol", "NaN")
+    try:
+        iv = float(iv_raw)
+        iv_str = f"{iv * 100:.4f}%" if iv > 0 else "[solver did not converge]"
+    except ValueError:
+        iv_str = "[solver did not converge]"
+
+    try:
+        from rich.table import Table
+        from rich.console import Console
+
+        console = Console()
+        table = Table(title="Implied Volatility Result", show_header=True,
+                      header_style="bold cyan")
+        table.add_column("Field",  style="bold")
+        table.add_column("Value",  justify="right")
+
+        table.add_row("Asset",           params["asset"])
+        table.add_row("Option Type",     params["option_type"].upper())
+        table.add_row("Spot Price (S)",  f"${float(params['spot_price']):.2f}")
+        table.add_row("Strike (K)",      f"${float(params['strike_price']):.2f}")
+        table.add_row("Expiry (T)",      f"{float(params['time_to_expiry']):.3f} yrs")
+        table.add_row("Rate (r)",        f"{float(params['risk_free_rate'])*100:.2f}%")
+        table.add_row("Market Price",    f"${float(params['volatility']):.4f}")
+        table.add_section()
+        table.add_row("[bold green]Implied Vol", f"[bold green]{iv_str}")
+        console.print(table)
+
+    except ImportError:
+        print("\n--- Implied Volatility ---")
+        print(f"  Implied Vol : {iv_str}")
 
 
 def write_input_csv(params: dict) -> pathlib.Path:
@@ -117,6 +169,7 @@ def display_result(params: dict, result: dict) -> None:
         table.add_row("Gamma",   f"{float(result['gamma']):.6f}")
         table.add_row("Theta",   f"{float(result['theta']):.6f}  (per day)")
         table.add_row("Vega",    f"{float(result['vega']):.6f}  (per 1% vol)")
+        table.add_row("Rho",     f"{float(result['rho']):.6f}  (per 1% rate)")
         console.print(table)
 
     except ImportError:
@@ -127,6 +180,7 @@ def display_result(params: dict, result: dict) -> None:
         print(f"  Gamma        : {float(result['gamma']):.6f}")
         print(f"  Theta        : {float(result['theta']):.6f}  (per day)")
         print(f"  Vega         : {float(result['vega']):.6f}  (per 1% vol)")
+        print(f"  Rho          : {float(result['rho']):.6f}  (per 1% rate)")
 
 
 def main():
@@ -136,12 +190,29 @@ def main():
         print("Build the project first:\n  cd build && cmake .. && cmake --build .")
         sys.exit(1)
 
-    params = get_inputs()
-    input_csv = write_input_csv(params)
-    call_engine(binary, input_csv)
-    result = read_output_csv()
-    if result:
-        display_result(params, result)
+    mode = choose_mode()
+
+    if mode == "2":
+        params = get_inputs_iv()
+        input_csv = write_input_csv(params)
+        result = subprocess.run(
+            [str(binary), "--iv", str(input_csv)],
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            print("C++ engine error:\n", result.stderr)
+            sys.exit(1)
+        print(result.stdout)
+        out = read_output_csv()
+        if out:
+            display_iv_result(params, out)
+    else:
+        params = get_inputs()
+        input_csv = write_input_csv(params)
+        call_engine(binary, input_csv)
+        result = read_output_csv()
+        if result:
+            display_result(params, result)
 
 
 if __name__ == "__main__":

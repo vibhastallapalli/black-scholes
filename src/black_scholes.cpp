@@ -55,5 +55,32 @@ OptionResult price(const OptionParams& p) {
     // vega: per 1% move in vol
     res.vega = p.S * npd1 * sqrtT / 100.0;
 
+    // rho: per 1% move in rate
+    res.rho = isCall
+        ?  p.K * p.T * disc * Nd2  / 100.0
+        : -p.K * p.T * disc * Nnd2 / 100.0;
+
     return res;
+}
+
+double impliedVol(double marketPrice, OptionParams p) {
+    const int    MAX_ITER = 100;
+    const double TOL      = 1e-8;
+
+    double sigma = 0.2;  // initial guess
+    for (int i = 0; i < MAX_ITER; ++i) {
+        p.sigma = sigma;
+        OptionResult r = price(p);
+        double diff  = r.price - marketPrice;
+        if (std::abs(diff) < TOL)
+            return sigma;
+        // vega in the struct is per-1%-vol; convert back to per-unit for Newton step
+        double vega = r.vega * 100.0;
+        if (std::abs(vega) < 1e-12)
+            return -1.0;
+        sigma -= diff / vega;
+        if (sigma <= 0.0)
+            sigma = 1e-6;
+    }
+    return -1.0;
 }

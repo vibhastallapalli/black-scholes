@@ -54,10 +54,10 @@ static void runSingle(const std::string& inputCSV) {
     OptionResult res = price(p);
 
     std::ofstream fout("data/ui_output.csv");
-    fout << "option_price,delta,gamma,theta,vega\n";
+    fout << "option_price,delta,gamma,theta,vega,rho\n";
     fout << std::fixed << std::setprecision(6)
          << res.price << "," << res.delta << "," << res.gamma
-         << "," << res.theta << "," << res.vega << "\n";
+         << "," << res.theta << "," << res.vega << "," << res.rho << "\n";
 
     std::cout << "\n=== Black-Scholes Result ===\n"
               << "Asset:   " << asset     << "\n"
@@ -70,7 +70,60 @@ static void runSingle(const std::string& inputCSV) {
               << "Delta:  " << res.delta << "\n"
               << "Gamma:  " << res.gamma << "\n"
               << "Theta:  " << res.theta << "\n"
-              << "Vega:   " << res.vega  << "\n";
+              << "Vega:   " << res.vega  << "\n"
+              << "Rho:    " << res.rho   << "\n";
+}
+
+// ── --iv mode ────────────────────────────────────────────────────────────────
+// Same CSV format as --single but the "volatility" column carries the market
+// price.  Writes data/ui_output.csv with a single field: implied_vol.
+
+static void runIV(const std::string& inputCSV) {
+    std::ifstream fin(inputCSV);
+    if (!fin) {
+        std::cerr << "Cannot open " << inputCSV << "\n";
+        std::exit(1);
+    }
+
+    std::string header, line;
+    std::getline(fin, header);
+    std::getline(fin, line);
+    fin.close();
+
+    std::istringstream ss(line);
+    std::string asset, opt_type, tok;
+    OptionParams p{};
+    double marketPrice = 0.0;
+
+    std::getline(ss, asset,    ',');
+    std::getline(ss, tok,      ','); p.S          = std::stod(tok);
+    std::getline(ss, tok,      ','); p.K          = std::stod(tok);
+    std::getline(ss, tok,      ','); p.T          = std::stod(tok);
+    std::getline(ss, tok,      ','); p.r          = std::stod(tok);
+    std::getline(ss, tok,      ','); marketPrice  = std::stod(tok);  // market price
+    std::getline(ss, opt_type, ',');
+    p.option_type = opt_type;
+
+    double iv = impliedVol(marketPrice, p);
+
+    std::ofstream fout("data/ui_output.csv");
+    fout << "implied_vol\n";
+    if (iv < 0.0)
+        fout << "NaN\n";
+    else
+        fout << std::fixed << std::setprecision(8) << iv << "\n";
+
+    std::cout << "\n=== Implied Volatility Result ===\n"
+              << "Asset:        " << asset << "\n"
+              << "Type:         " << p.option_type << "\n"
+              << "S=" << p.S << "  K=" << p.K
+              << "  T=" << p.T << "  r=" << p.r << "\n"
+              << "Market Price: " << marketPrice << "\n\n";
+    if (iv < 0.0)
+        std::cout << "Implied Vol:  [solver did not converge]\n";
+    else
+        std::cout << std::fixed << std::setprecision(4)
+                  << "Implied Vol:  " << iv * 100.0 << "%\n";
 }
 
 // ── batch mode ────────────────────────────────────────────────────────────────
@@ -78,6 +131,10 @@ static void runSingle(const std::string& inputCSV) {
 int main(int argc, char* argv[]) {
     if (argc >= 3 && std::string(argv[1]) == "--single") {
         runSingle(argv[2]);
+        return 0;
+    }
+    if (argc >= 3 && std::string(argv[1]) == "--iv") {
+        runIV(argv[2]);
         return 0;
     }
 
@@ -112,8 +169,9 @@ int main(int argc, char* argv[]) {
               << std::setw(9)  << "Gamma"
               << std::setw(10) << "Theta"
               << std::setw(9)  << "Vega"
+              << std::setw(9)  << "Rho"
               << "\n";
-    std::cout << std::string(79, '-') << "\n";
+    std::cout << std::string(88, '-') << "\n";
 
     // begin transaction for speed
     char* errMsg = nullptr;
@@ -148,6 +206,7 @@ int main(int argc, char* argv[]) {
                   << std::setw(9)  << std::setprecision(6) << res.gamma
                   << std::setw(10) << std::setprecision(4) << res.theta
                   << std::setw(9)  << res.vega
+                  << std::setw(9)  << res.rho
                   << "\n";
     }
 

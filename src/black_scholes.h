@@ -16,8 +16,12 @@ struct OptionResult {
     double gamma;
     double theta;
     double vega;
+    double rho;
 };
 
 double normalCDF(double x);
 double normalPDF(double x);
 OptionResult price(const OptionParams& p);
+
+// Returns implied volatility given a market price, or -1.0 on failure.
+double impliedVol(double marketPrice, OptionParams p);
