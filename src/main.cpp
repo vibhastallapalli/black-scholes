@@ -54,10 +54,13 @@ static void runSingle(const std::string& inputCSV) {
     OptionResult res = price(p);
 
     std::ofstream fout("data/ui_output.csv");
-    fout << "option_price,delta,gamma,theta,vega,rho\n";
+    fout << "option_price,delta,gamma,theta,vega,rho,breakeven,breakeven_pct,moneyness\n";
     fout << std::fixed << std::setprecision(6)
-         << res.price << "," << res.delta << "," << res.gamma
-         << "," << res.theta << "," << res.vega << "," << res.rho << "\n";
+         << res.price    << "," << res.delta << "," << res.gamma
+         << "," << res.theta  << "," << res.vega  << "," << res.rho
+         << "," << std::setprecision(4) << res.breakeven
+         << "," << std::setprecision(4) << res.breakeven_pct
+         << "," << res.moneyness << "\n";
 
     std::cout << "\n=== Black-Scholes Result ===\n"
               << "Asset:   " << asset     << "\n"
@@ -66,12 +69,15 @@ static void runSingle(const std::string& inputCSV) {
               << "  T=" << p.T << "  r=" << p.r
               << "  σ=" << p.sigma << "\n\n"
               << std::fixed << std::setprecision(6)
-              << "Price:  " << res.price << "\n"
-              << "Delta:  " << res.delta << "\n"
-              << "Gamma:  " << res.gamma << "\n"
-              << "Theta:  " << res.theta << "\n"
-              << "Vega:   " << res.vega  << "\n"
-              << "Rho:    " << res.rho   << "\n";
+              << "Price:         " << res.price << "\n"
+              << "Delta:         " << res.delta << "\n"
+              << "Gamma:         " << res.gamma << "\n"
+              << "Theta:         " << res.theta << "\n"
+              << "Vega:          " << res.vega  << "\n"
+              << "Rho:           " << res.rho   << "\n"
+              << "Breakeven:     $" << std::setprecision(2) << res.breakeven << "\n"
+              << "Move needed:   " << std::setprecision(2) << res.breakeven_pct << "%\n"
+              << "Moneyness:     " << res.moneyness << "\n";
 }
 
 // ── --iv mode ────────────────────────────────────────────────────────────────

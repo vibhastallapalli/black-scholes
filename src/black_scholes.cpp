@@ -60,6 +60,17 @@ OptionResult price(const OptionParams& p) {
         ?  p.K * p.T * disc * Nd2  / 100.0
         : -p.K * p.T * disc * Nnd2 / 100.0;
 
+    res.breakeven     = isCall ? p.K + res.price : p.K - res.price;
+    res.breakeven_pct = (res.breakeven - p.S) / p.S * 100.0;
+
+    double moneyness_ratio = p.S / p.K;
+    if (std::abs(moneyness_ratio - 1.0) <= 0.005)
+        res.moneyness = "ATM";
+    else if ((isCall && p.S > p.K) || (!isCall && p.S < p.K))
+        res.moneyness = "ITM";
+    else
+        res.moneyness = "OTM";
+
     return res;
 }
 

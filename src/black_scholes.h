@@ -17,6 +17,10 @@ struct OptionResult {
     double theta;
     double vega;
     double rho;
+    double breakeven;      // spot at expiry needed to recover premium
+    double breakeven_pct;  // % move from current spot to breakeven
+    // "ITM", "ATM" (within 0.5%), or "OTM"
+    std::string moneyness;
 };
 
 double normalCDF(double x);

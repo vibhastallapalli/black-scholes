@@ -170,6 +170,10 @@ def display_result(params: dict, result: dict) -> None:
         table.add_row("Theta",   f"{float(result['theta']):.6f}  (per day)")
         table.add_row("Vega",    f"{float(result['vega']):.6f}  (per 1% vol)")
         table.add_row("Rho",     f"{float(result['rho']):.6f}  (per 1% rate)")
+        table.add_section()
+        table.add_row("Breakeven",    f"${float(result['breakeven']):.2f}")
+        table.add_row("Move needed",  f"{float(result['breakeven_pct']):+.2f}%")
+        table.add_row("Moneyness",    result["moneyness"])
         console.print(table)
 
     except ImportError:
@@ -181,6 +185,9 @@ def display_result(params: dict, result: dict) -> None:
         print(f"  Theta        : {float(result['theta']):.6f}  (per day)")
         print(f"  Vega         : {float(result['vega']):.6f}  (per 1% vol)")
         print(f"  Rho          : {float(result['rho']):.6f}  (per 1% rate)")
+        print(f"  Breakeven    : ${float(result['breakeven']):.2f}")
+        print(f"  Move needed  : {float(result['breakeven_pct']):+.2f}%")
+        print(f"  Moneyness    : {result['moneyness']}")
 
 
 def main():
