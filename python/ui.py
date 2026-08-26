@@ -104,6 +104,7 @@ def display_iv_result(params: dict, result: dict) -> None:
         table.add_row("Market Price",    f"${float(params['volatility']):.4f}")
         table.add_section()
         table.add_row("[bold green]Implied Vol", f"[bold green]{iv_str}")
+        console.print()
         console.print(table)
 
     except ImportError:
@@ -174,6 +175,7 @@ def display_result(params: dict, result: dict) -> None:
         table.add_row("Breakeven",    f"${float(result['breakeven']):.2f}")
         table.add_row("Move needed",  f"{float(result['breakeven_pct']):+.2f}%")
         table.add_row("Moneyness",    result["moneyness"])
+        console.print()
         console.print(table)
 
     except ImportError:
