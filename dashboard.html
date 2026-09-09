@@ -3,12 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Interactive Black-Scholes options pricing dashboard with Greeks, charts, and contract history.">
 <title>Black-Scholes Terminal</title>
 <link id="favicon" rel="icon" type="image/png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 :root {
   --bg: #0a0a0a;
@@ -1456,23 +1469,23 @@ tbody td {
 <div class="inputs-panel">
   <div class="inputs-row">
     <div class="inp-group">
-      <label>Spot Price (S)</label>
+      <label for="S">Spot Price (S)</label>
       <input type="number" id="S" value="195.76" step="0.01" oninput="onManualEdit()">
     </div>
     <div class="inp-group">
-      <label>Strike Price (K)</label>
+      <label for="K">Strike Price (K)</label>
       <input type="number" id="K" value="200.00" step="0.01" oninput="updateAll()">
     </div>
     <div class="inp-group">
-      <label>Expiry T (years)</label>
+      <label for="T">Expiry T (years)</label>
       <input type="number" id="T" value="0.50" step="0.01" min="0.001" oninput="updateAll()">
     </div>
     <div class="inp-group">
-      <label>Risk-Free Rate (r)</label>
+      <label for="r">Risk-Free Rate (r)</label>
       <input type="number" id="r" value="0.05" step="0.001" oninput="updateAll()">
     </div>
     <div class="inp-group">
-      <label>Volatility (σ)</label>
+      <label for="sigma">Volatility (σ)</label>
       <input type="number" id="sigma" value="0.25" step="0.001" oninput="onManualEdit()">
     </div>
     <div class="type-wrap">
@@ -1561,11 +1574,11 @@ tbody td {
 <div class="charts-row">
   <div class="chart-card">
     <div class="chart-title">Option Price vs Spot Price</div>
-    <div class="chart-wrap"><div class="chart-skel" id="skelPriceChart"></div><canvas id="priceChart"></canvas></div>
+    <div class="chart-wrap"><div class="chart-skel" id="skelPriceChart"></div><canvas id="priceChart" role="img" aria-label="Line chart comparing call and put option prices across spot prices"></canvas></div>
   </div>
   <div class="chart-card">
     <div class="chart-title">Greeks vs Spot Price</div>
-    <div class="chart-wrap"><div class="chart-skel" id="skelGreeksChart"></div><canvas id="greeksChart"></canvas></div>
+    <div class="chart-wrap"><div class="chart-skel" id="skelGreeksChart"></div><canvas id="greeksChart" role="img" aria-label="Line chart showing Delta, Gamma, Theta, and Vega across spot prices"></canvas></div>
   </div>
 </div>
 
@@ -1575,7 +1588,7 @@ tbody td {
   <div class="table-search-wrap">
     <div class="section-label" style="margin-bottom:0">Sample Contracts</div>
     <div style="display:flex;gap:8px;align-items:center;">
-      <input class="table-search" id="tableSearch" type="text" placeholder="Search asset or type…" oninput="filterTable()">
+      <input class="table-search" id="tableSearch" type="text" placeholder="Search asset or type…" aria-label="Search contracts by asset or option type" oninput="filterTable()">
       <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilterDrawer()">⚙ Filters</button>
       <div class="col-vis-wrap" id="colVisWrap">
         <button class="filter-toggle-btn" onclick="toggleColVis(event)" title="Column visibility">⊞ Columns</button>
@@ -1595,6 +1608,7 @@ tbody td {
     </div>
   </div>
   <table>
+    <caption class="sr-only">Sample option contracts and calculated values</caption>
     <thead>
       <tr>
         <th data-col="asset" onclick="sortTable(0,'str')">Asset<span class="sort-arrow">⇅</span></th>
